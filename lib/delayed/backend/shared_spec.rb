@@ -15,6 +15,7 @@ shared_examples_for 'a delayed_job backend' do
     Delayed::Worker.default_priority = 99
     Delayed::Worker.delay_jobs = true
     Delayed::Worker.default_queue_name = 'default_tracking'
+    Delayed::Worker.logger = Logger.new(StringIO.new)
     SimpleJob.runs = 0
     described_class.delete_all
   end
@@ -275,9 +276,29 @@ shared_examples_for 'a delayed_job backend' do
     end
 
     it 'parses from handler on deserialization error' do
+      allow(Delayed::Worker.logger).to receive(:error)
+
       job = Story.create(:text => '...').delay.text
       job.payload_object.object.destroy
       expect(job.reload.name).to eq('Delayed::PerformableMethod')
+
+      expect(Delayed::Worker.logger).to have_received(:error).with(/Couldn't get job name/)
+    end
+
+    it 'parses from handler on any error' do
+      allow(Delayed::Worker.logger).to receive(:error)
+
+      job = described_class.new(:payload_object => MisbehavingNamedJob.new)
+      expect(job.reload.name).to eq('MisbehavingNamedJob')
+
+      expect(Delayed::Worker.logger).to have_received(:error).with(/Couldn't get job name/)
+    end
+
+    it 'parses from handler on any error, when no logger is available' do
+      Delayed::Worker.logger = nil
+
+      job = described_class.new(:payload_object => MisbehavingNamedJob.new)
+      expect(job.reload.name).to eq('MisbehavingNamedJob')
     end
   end
 
