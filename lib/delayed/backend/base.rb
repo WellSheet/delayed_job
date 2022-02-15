@@ -59,7 +59,9 @@ module Delayed
 
       def name
         @name ||= payload_object.respond_to?(:display_name) ? payload_object.display_name : payload_object.class.name
-      rescue DeserializationError
+      rescue StandardError => e
+        Delayed::Worker.logger&.error "Couldn't get job name: #{e.message}"
+
         ParseObjectFromYaml.match(handler)[1]
       end
 
