@@ -279,6 +279,11 @@ shared_examples_for 'a delayed_job backend' do
       job.payload_object.object.destroy
       expect(job.reload.name).to eq('Delayed::PerformableMethod')
     end
+
+    it 'parses from handler on any error' do
+      job = described_class.new(:payload_object => MisbehavingNamedJob.new)
+      expect(job.reload.name).to eq('MisbehavingNamedJob')
+    end
   end
 
   context 'worker prioritization' do

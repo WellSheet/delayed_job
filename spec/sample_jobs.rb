@@ -109,3 +109,9 @@ class EnqueueJobMod < SimpleJob
     job.run_at = 20.minutes.from_now
   end
 end
+
+class MisbehavingNamedJob < SimpleJob
+  def display_name
+    raise "This job can't be named"
+  end
+end
